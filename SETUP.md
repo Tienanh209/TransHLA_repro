@@ -72,14 +72,15 @@ Hai cách, chọn một để tránh xung đột:
 
 Đừng làm cả hai cùng lúc trên cùng một notebook.
 
-## 5. Thứ tự chạy (không đổi)
+## 5. Thứ tự chạy
+
+Giai đoạn 1 chỉ có một notebook, chạy từ đầu đến cuối là xong cả hai lớp HLA:
 
 ```
-01_collect_data.ipynb                  (CPU)
-02_process_data.ipynb   HLA_CLASS='I'  (GPU)
-03_run_experiment.ipynb HLA_CLASS='I'  (GPU)
-02_process_data.ipynb   HLA_CLASS='II' (GPU)
-03_run_experiment.ipynb HLA_CLASS='II' (GPU)
+01_eval_pretrained.ipynb   (GPU)
 ```
 
-Xem `README.md` cho thời gian chạy, dung lượng và kết quả cần khớp.
+Không cần Drive — dữ liệu clone trực tiếp từ repo gốc của tác giả. Xem `README.md` cho thời
+gian chạy và kết quả cần khớp.
+
+> `legacy_scaffold/` là bản thử đầu tiên, không dùng để tái hiện. `README.md` giải thích lý do.

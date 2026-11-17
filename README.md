@@ -1,125 +1,126 @@
-# Tái hiện TransHLA trên Google Colab
+# Tái hiện TransHLA
 
 Bài báo: **TransHLA: a Hybrid Transformer model for HLA-presented epitope detection**
 Lu T., Wang X., Nie W., Huo M., Li S. — *GigaScience* 14 (2025), DOI `10.1093/gigascience/giaf008`
-Code gốc: `github.com/SkywalkerLuke/TransHLA` · Trọng số: `huggingface.co/SkywalkerLu/TransHLA_I` và `TransHLA_II`
 
-**Quy trình VS Code + Colab:** xem [SETUP.md](SETUP.md).
-
----
-
-## Ba notebook
-
-| # | Notebook | GPU | Thời gian |
-|---|---|---|---|
-| 1 | `01_collect_data.ipynb` — tải và chuẩn hoá dữ liệu | không | 15–40 phút |
-| 2 | `02_process_data.ipynb` — ESM2-650M embedding + contact map | **có** | 10 phút – 1,5 giờ |
-| 3 | `03_run_experiment.ipynb` — huấn luyện, đánh giá, case study | **có** | 1,5 – 8 giờ |
-
-Tất cả dùng chung thư mục Drive `MyDrive/s1156052/EpitopePrediction/`, nên có thể chạy từng phase ở các
-phiên Colab khác nhau mà không mất dữ liệu.
-
-```
-EpitopePrediction/
-├── data/          # Phase 1: hlaI_all.parquet, hlaII_all.parquet
-├── cache/         # Phase 2: emb.f16, contact.f16, index.parquet, meta.json
-├── checkpoints/   # Phase 3: *.pt
-└── results/       # Phase 3: table2_*.csv, fig3_*.png, summary_*.json
-```
-
----
-
-## Thời gian chạy — trả lời ngắn
-
-**Không lâu như vẻ ngoài của bài báo.** Phần nặng nhất (ESM2-650M) chỉ chạy **một lần** và
-peptide rất ngắn (8–21 acid amin) nên rẻ bất ngờ. Phần huấn luyện thì mô hình chỉ ~15M tham số.
-
-### Chạy trên tập con 150.000 peptide (mặc định) — Colab free T4
-
-| bước | thời gian |
+| | |
 |---|---|
-| Phase 1 | ~20 phút (chủ yếu là tải dữ liệu) |
-| Phase 2 (mỗi lớp HLA) | ~5–10 phút |
-| Phase 3 — TransHLA, 20 epoch | ~40–60 phút |
-| Phase 3 — thêm 4 mô hình đối chứng | ~2–3 giờ |
-| **Tổng cho cả HLA-I và HLA-II** | **≈ 6–8 giờ** |
-
-### Chạy toàn bộ dữ liệu (919k + 624k peptide) — Colab free T4
-
-| bước | thời gian |
-|---|---|
-| Phase 2, HLA-I | 30–50 phút (ghi 38 GB xuống đĩa) |
-| Phase 2, HLA-II | 25–40 phút (38 GB) |
-| Phase 3, TransHLA HLA-I, 20 epoch | 3–5 giờ |
-| Phase 3, TransHLA HLA-II, 20 epoch | 2–4 giờ |
-| 4 mô hình đối chứng × 2 lớp | 8–14 giờ |
-| **Tổng** | **≈ 20–30 giờ GPU** |
-
-Trên **A100** (Colab Pro+) con số này rút còn **5–8 giờ**.
-
-### Điều đáng lo hơn thời gian: dung lượng
-
-Embedding đầy đủ chiếm **~38 GB mỗi lớp HLA** (fp16). Google Drive miễn phí có 15 GB.
-Vì vậy notebook mặc định đặt `SUBSET_N = 150_000` (~6 GB). Muốn chạy đầy đủ thì:
-
-* đặt `CACHE_ON_DRIVE = False` (ghi vào đĩa cục bộ ~100 GB của Colab) **và chạy Phase 2 + Phase 3 trong cùng một phiên**, hoặc
-* dùng Colab Pro + Drive trả phí.
-
-### Phần **không** chạy được trên Colab
-
-Quy trình sinh negative samples của bài báo cần BLAST (DIAMOND) toàn bộ peptide dương tính
-ngược lại **NCBI nr** (~400 GB) rồi khử dư thừa bằng CD-HIT. Việc này cần máy chủ riêng,
-≥500 GB đĩa và **1–2 ngày**. Notebook 1 vì vậy mặc định dùng bộ dữ liệu train/val/test mà
-tác giả đã công bố — đây là cách tái hiện đúng và khả thi. Pipeline đầy đủ vẫn được ghi lại
-ở cuối notebook 1 (`OPTION B`) nếu bạn có hạ tầng phù hợp.
+| Code gốc | `github.com/SkywalkerLuke/TransHLA` |
+| Trọng số | `huggingface.co/SkywalkerLu/TransHLA_I` và `TransHLA_II` |
+| Quy trình làm việc | VS Code (Mac) → GitHub → Colab, xem [SETUP.md](SETUP.md) |
 
 ---
 
-## Thứ tự chạy
+## Tác giả công bố nhiều hơn bài báo viết
 
-```
-01_collect_data.ipynb                 (CPU, chạy 1 lần)
-02_process_data.ipynb  HLA_CLASS='I'  (GPU)
-03_run_experiment.ipynb HLA_CLASS='I' (GPU)
-02_process_data.ipynb  HLA_CLASS='II' (GPU)
-03_run_experiment.ipynb HLA_CLASS='II'(GPU)
-```
+Đây là điều quan trọng nhất khi bắt đầu, vì nó rút ngắn công việc đi rất nhiều:
 
-Notebook 2 có cơ chế **resume**: nếu Colab ngắt giữa chừng, chạy lại là nó tiếp tục từ chỗ dừng.
-Notebook 3 lưu checkpoint tốt nhất sau mỗi epoch vào Drive.
+| | trong repo gốc |
+|---|---|
+| **Dữ liệu** | **có sẵn toàn bộ** tập train/validation/test đã chia, cộng NEPDB và external 1×/4× |
+| **Model** | `model_train_test/model.py` có `TransHLA` **và cả 4 baseline** (TextCNN, TextRCNN, DPCNN, RNN_ATTs) |
+| **Siêu tham số** | `train.py`: Adam `lr=3e-5`, `weight_decay=0.0025`, batch 64, 100 epoch, early stopping patience 5, seed 10038, `n_layers=6`, `n_head=8`, `d_model=1280`, `dim_feedforward=64` |
+| **Embedding** | ESM2 `esm2_t33_650M_UR50D`, biểu diễn layer 33 + contact map (`return_contacts=True`), **đóng băng** (`torch.no_grad`) |
+
+Số lượng mẫu trong tập test khớp đúng Bảng 2: **92.347** epitope HLA-I dương tính và **65.105**
+epitope HLA-II dương tính. Nghĩa là **không cần** dựng lại quy trình sinh mẫu âm của bài báo
+(BLAST toàn bộ peptide dương tính ngược NCBI nr ~400 GB rồi khử dư thừa bằng CD-HIT) — việc
+cần máy chủ riêng và 1-2 ngày.
+
+---
+
+## Trạng thái
+
+| giai đoạn | tệp | trạng thái |
+|---|---|---|
+| **1. Đánh giá trọng số đã công bố** | [`01_eval_pretrained.ipynb`](01_eval_pretrained.ipynb) · [`transhla_eval.py`](transhla_eval.py) | xong, chưa chạy |
+| 2. Huấn luyện lại từ đầu | dùng `train.py` gốc | chưa làm |
+| 3. Huấn luyện 4 baseline | dùng `model.py` gốc | chưa làm |
+| 4. Case study CEDAR / VDJdb | — | chưa làm |
+
+Giai đoạn 1 là bước nên làm trước tiên: nếu con số khớp Bảng 2, ta biết dữ liệu và quy trình
+đánh giá đã đúng, nên mọi sai lệch về sau chỉ có thể đến từ quá trình huấn luyện.
+
+---
+
+## Chạy giai đoạn 1
+
+Mở `01_eval_pretrained.ipynb` trên Colab (File → Open notebook → GitHub →
+`Tienanh209/TransHLA_repro`), chọn **Runtime → GPU**, rồi Run all.
+
+* không cần Google Drive — dữ liệu clone trực tiếp từ repo gốc (~250 MB)
+* tải về ESM2-650M (~2,6 GB) và 2 checkpoint TransHLA (~2,6 GB mỗi cái)
+* ~10-25 phút cho cả hai lớp HLA trên A100
+
+Hoặc chạy bằng dòng lệnh trên máy có GPU:
+
+```bash
+python transhla_eval.py --hla both --dataset test --out results/
+```
 
 ---
 
 ## Kết quả cần khớp
 
-**Bảng 2** — tập test IEDB (92.347 epitope HLA-I, 65.105 epitope HLA-II, 157.879 chuỗi ngẫu nhiên):
+**Bảng 2** — tập test IEDB (184.697 peptide HLA-I, 130.634 peptide HLA-II):
 
-| | ACC | F1 | Recall | MCC | AUC |
+| | ACC (%) | F1 (%) | Recall (%) | MCC | AUC (%) |
 |---|---|---|---|---|---|
 | TransHLA, HLA-I | 84,72 | 84,59 | 83,92 | 0,69 | 91,95 |
 | TransHLA, HLA-II | 79,94 | 81,07 | 86,19 | 0,60 | 88,14 |
 
 Mô hình đứng thứ hai (DPCNN) đạt 83,75 / 90,97 ở HLA-I và 77,41 / 85,30 ở HLA-II.
-Trên tập neoepitope NEPDB đã kiểm chứng bằng thực nghiệm TCR, TransHLA đạt **90,65%** độ chính xác.
+Số đầy đủ của cả 4 baseline nằm trong `transhla_eval.PAPER_BASELINES_TABLE2`.
 
-Notebook 3 in sẵn bảng so sánh *tái hiện vs bài báo* và có thêm mục đối chiếu với **trọng số
-chính thức trên HuggingFace** chạy trên đúng tập test của bạn — cách nhanh nhất để biết sai lệch
-đến từ dữ liệu hay từ quá trình huấn luyện.
+**Bảng 4** — NEPDB, neoepitope đã kiểm chứng bằng thí nghiệm TCR: ACC **90,65%**,
+recall **93,52%**, specificity **87,77%**.
+
+Notebook in sẵn bảng *tái hiện vs bài báo* kèm độ lệch cho từng chỉ số.
 
 ---
 
-## Những chỗ bài báo không nêu rõ (đã chọn giá trị hợp lý)
+## Những chỗ dễ sai
 
-| tham số | bài báo | notebook dùng |
-|---|---|---|
-| số epoch | không nêu | 20 + early stopping theo AUC |
-| learning rate / optimizer | không nêu | AdamW, 1e-4, cosine schedule |
-| batch size | không nêu | 256 |
-| số lớp Transformer encoder | không nêu | 1 (đổi qua `n_tf_layers`) |
-| số head | không nêu | 8 |
-| α của TIM loss | **0,04** | 0,04 |
-| lớp biểu diễn ESM2 | không nêu | layer 33 (cuối) |
-| mô hình ESM2 | ESM2 | `esm2_t33_650M_UR50D` (theo model card HF) |
-| độ dài đệm | đệm cuối bằng 1 | 16 (HLA-I) / 23 (HLA-II), theo model card HF |
+Đã xử lý sẵn trong `transhla_eval.py`, ghi lại đây để khỏi vấp lại:
 
-Nếu kết quả lệch, notebook 3 có danh sách kiểm tra theo thứ tự ưu tiên ở ô cuối cùng.
+1. **Độ dài đệm.** HLA-I đệm tới **16** token, HLA-II tới **23** (= `max_len` 14/21 cộng `<cls>`
+   và `<eos>`), đệm bằng token **1** (`<pad>`). Sai thì contact map của ESM2 lệch chiều.
+2. **Đầu ra đã là softmax.** `model(tokens)` trả `(probs, representation)`, `probs[:, 1]` là
+   p(epitope). Đừng softmax lần nữa.
+3. **Không lọc tập test.** Không khử trùng lặp (`train.py` chỉ khử ở tập train), không loại
+   peptide chứa `X` (ESM2 có ký tự này trong từ điển). Loại đi là mất 169 dòng âm của HLA-I.
+4. **Phải lọc độ dài tập external.** Các tập này chứa peptide 7-29 acid amin; hàm đệm của tác
+   giả chỉ đệm chứ không cắt nên sẽ lỗi tensor lệch chiều.
+5. **`model.eval()`.** Mô hình có BatchNorm và Dropout.
+6. **Peptide 13-14 acid amin** nằm trong khoảng của cả hai mô hình — đừng lẫn mô hình nọ với
+   tập kia.
+
+---
+
+## Giai đoạn 2 — huấn luyện lại
+
+Siêu tham số đã có đủ nên chạy trực tiếp `train.py` của tác giả:
+
+```bash
+cd TransHLA_official/model_train_test
+python train.py --train_path ../data/HLA_I_epitope_train_shuffle.csv \
+                --validation_path ../data/HLA_I_epitope_validation.csv \
+                --model_path ./checkpoints --model_name transhla_I.pt
+```
+
+Hai điều cần biết trước:
+
+* `train.py` gọi ESM2 trong `forward` **mỗi batch, mỗi epoch**, tính lại từ đầu. Cache
+  embedding + contact map một lần sẽ nhanh hơn nhiều, đổi lại ~38 GB mỗi lớp HLA ở fp16.
+* `max_len` mặc định là 14 (HLA-I). Chạy HLA-II phải truyền `-max_len 21` — chính tác giả ghi
+  chú việc này trong `train.py`.
+
+---
+
+## `legacy_scaffold/`
+
+Bản thử đầu tiên: 3 notebook tự viết lại mô hình từ bài báo, kèm quy trình cache embedding
+xuống Drive. Giữ lại để tham khảo nhưng **không dùng để tái hiện** — README của nó ghi rằng
+bài báo không nêu epoch/lr/batch rồi tự chọn (AdamW 1e-4, batch 256, 20 epoch, 1 lớp encoder),
+trong khi code gốc có đủ và khác hẳn (Adam 3e-5, batch 64, 6 lớp). Huấn luyện theo đó sẽ không
+ra số của bài báo.
