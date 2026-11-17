@@ -1,6 +1,6 @@
 # Quy trình làm việc: sửa code ở VS Code — chạy trên Google Colab
 
-Repo: <https://github.com/Tienanh209/TransHLA_repro> (riêng tư)
+Repo: <https://github.com/Tienanh209/TransHLA_repro> (công khai)
 
 ```
 VS Code (Mac)  --- git push --->  GitHub  --- git pull --->  Colab (GPU)
@@ -28,19 +28,14 @@ python3 -m venv .venv && source .venv/bin/activate && pip install -r requirement
 
 Sau đó trong VS Code: `Cmd+Shift+P` → **Python: Select Interpreter** → chọn `.venv`.
 
-## 2. Chuẩn bị một lần trên Colab
+## 2. Chuẩn bị trên Colab
 
-Repo ở chế độ riêng tư nên Colab cần token để clone:
+Không cần gì cả — repo công khai nên ô bootstrap clone được ngay.
 
-1. Tạo token tại <https://github.com/settings/tokens> → **Fine-grained token**, chọn repo
-   `TransHLA_repro`, quyền **Contents: Read-only**.
-2. Trong Colab, bấm biểu tượng **chìa khoá 🔑** ở cột trái → **Add new secret**
-   → Name `GH_TOKEN`, Value là token vừa tạo → bật **Notebook access**.
-
-Token chỉ cần làm một lần, dùng chung cho cả ba notebook.
-
-> Nếu thấy phiền, có thể để repo ở chế độ công khai (`gh repo edit --visibility public`)
-> rồi bỏ qua bước token — ô bootstrap vẫn chạy bình thường khi không có `GH_TOKEN`.
+> Nếu sau này chuyển repo về riêng tư (`gh repo edit --visibility private`), tạo
+> **fine-grained token** tại <https://github.com/settings/tokens> (chọn repo `TransHLA_repro`,
+> quyền **Contents: Read-only**) rồi lưu trong Colab ở biểu tượng **chìa khoá 🔑** → **Add new
+> secret**, tên `GH_TOKEN`, bật **Notebook access**. Ô bootstrap tự nhận ra và dùng.
 
 ## 3. Vòng lặp hằng ngày
 
