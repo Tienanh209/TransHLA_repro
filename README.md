@@ -4,6 +4,8 @@ Bài báo: **TransHLA: a Hybrid Transformer model for HLA-presented epitope dete
 Lu T., Wang X., Nie W., Huo M., Li S. — *GigaScience* 14 (2025), DOI `10.1093/gigascience/giaf008`
 Code gốc: `github.com/SkywalkerLuke/TransHLA` · Trọng số: `huggingface.co/SkywalkerLu/TransHLA_I` và `TransHLA_II`
 
+**Quy trình VS Code + Colab:** xem [SETUP.md](SETUP.md).
+
 ---
 
 ## Ba notebook
