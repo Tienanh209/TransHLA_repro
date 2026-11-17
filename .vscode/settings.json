@@ -1,0 +1,11 @@
+{
+  "python.analysis.typeCheckingMode": "off",
+  "jupyter.askForKernelRestart": false,
+  "notebook.output.textLineLimit": 60,
+  "notebook.formatOnSave.enabled": false,
+  "files.trimTrailingWhitespace": true,
+  "[python]": {
+    "editor.rulers": [100]
+  },
+  "git.autofetch": true
+}

@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Dữ liệu và kết quả — KHÔNG đẩy lên GitHub (nằm trên Google Drive)
+data/
+cache/
+checkpoints/
+results/
+*.parquet
+*.f16
+*.pt
+*.png
+*.csv
+*.pdf
+
+# Colab
+sample_data/
